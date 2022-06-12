@@ -2,6 +2,7 @@
 title: "My First Post"
 date: 2022-06-01T22:46:34+02:00
 draft: false
+tags: [Space]
 ---
 
 # Object and collection initializer
