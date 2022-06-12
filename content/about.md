@@ -3,6 +3,7 @@ title = "About"
 description = "About Papafe"
 date = "2019-02-28"
 aliases = ["contact"]
+layout = "about"
 +++
 
 Hey! I'm Ferdinando Papale, an italian developer living in Copenhagen, Denmark. Currently working at MongoDB on the .NET SDK for Realm, an object-oriented mobile database.
