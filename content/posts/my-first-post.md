@@ -2,7 +2,8 @@
 title: "My First Post"
 date: 2022-06-01T22:46:34+02:00
 draft: false
-tags: [Space]
+tags: [Space, mat]
+categories: [my-category]
 ---
 
 # Object and collection initializer
@@ -16,6 +17,13 @@ var a = new MyClass
     ...
 }
 ```
+
+{{< alert >}}
+**Warning!** This action is destructive!
+{{< /alert >}}
+
+{{< gist spf13 7896402 >}}
+
 
 This is creating the object and calling the setter on the created object to assign the properties. 
 This is different if one is trying to use it with collections and class (?) properties 

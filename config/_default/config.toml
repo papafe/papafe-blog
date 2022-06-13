@@ -1,0 +1,18 @@
+# -- Site Configuration --
+# Refer to the theme docs for more details about each of these parameters.
+# https://jpanther.github.io/congo/docs/getting-started/
+
+baseurl = "/"
+defaultContentLanguage = "en"
+
+title = 'Papafe'
+theme='congo'
+enableEmoji = true
+
+
+enableRobotsTXT = true
+paginate = 10
+summaryLength = 0
+
+[outputs]
+  home = ["HTML", "RSS", "JSON"]
