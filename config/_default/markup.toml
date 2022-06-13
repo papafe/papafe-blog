@@ -6,7 +6,9 @@
   unsafe = true
 
 [highlight]
-  noClasses = false
+  noClasses = true #If set to true, it will use default congo colours
+  style = "monokai"
+  lineNos = true
 
 [tableOfContents]
   startLevel = 2

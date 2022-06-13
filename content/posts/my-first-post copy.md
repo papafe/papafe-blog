@@ -4,7 +4,7 @@ date: 2022-06-01T22:52:34+02:00
 draft: false
 ---
 
-### one
+## one
 
 When creating an object is common to use the object initializer syntax to initialize properties:
 
