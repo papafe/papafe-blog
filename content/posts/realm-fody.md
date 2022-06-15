@@ -5,12 +5,11 @@ draft: false
 tags: [Space, mat]
 categories: [my-category]
 ---
-
 If you have ever added the Realm .NET nuget in one of your projects, you have probably noticed that it pulls another smaller package with it, `Realm.Fody`. This article will explain what is this package doing and why it's fundamental to Realm. 
 
 In the next section I am going to give a very small introduction to what IL weaving is and how Fody relates to it, so feel free to skip it if already know about it.
 
-# IL weaving and Fody
+## IL weaving and Fody
 
 The compilation of .NET source code produces Common Intermediate Language (CIL or IL for short) code, instead of machine-specific code. IL is a platform and CPU independent instruction set, and this allows the compiled code to be compatible with all the environments that supports the Common Language Infrastructure (CLI), such as the .NET or Mono runtimes. Then, when the IL code needs to be executed it gets compiled down to native code by the JIT compiler of the runtime. 
 > **_NOTE:_**  This is a simplification, and some of the steps can be different, but it gives a good picture of the process.
@@ -52,7 +51,7 @@ Working with IL weaving as part of the building process is quite complex though,
 As an example, if you ever had to implement `INotifyPropertyChanged` manually in a class with dozens of properties you would probably welcome weaving (and Fody) with open arms. By creating all the plumbing code directly in IL, libraries like [PropertyChanged.Fody](https://github.com/Fody/PropertyChanged) allows to inject the necessary notification code without the need to modify anything in the original source code. 
 
 
-# Realm.Fody
+## Realm.Fody
 
 Realm.Fody uses weaving for a series of reasons. The main one is that we want to weave properties. 
 If you've used Realm before then you know that realm classes look like POCOs, for instance:
@@ -83,7 +82,7 @@ Another important thing is the module init. This is used to build the default sc
 
 
 
-# Drawbacks
+## Drawbacks
 Very powerful, but it has several drawbacks too:
 - IL weaving code is extremely difficult to read
 - It requires a very specialized knowledge, it's error prone and trial and error
@@ -92,7 +91,7 @@ Very powerful, but it has several drawbacks too:
 - Very difficult to test
 
 
-# Alternatives
+## Alternatives
 
 One of the alternatives that we're going to use is called source generators. 
 What they do is that they add code to the compilation, they don't modify the pre-existing code like weaving does. 
@@ -105,7 +104,7 @@ But:
 
 Unfortunately given its additive nature not everything can be done with them
 
-# Final words
+## Final words
 
 
 
