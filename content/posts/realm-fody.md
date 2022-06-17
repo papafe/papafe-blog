@@ -41,7 +41,7 @@ method public hidebysig static void HelloWorld (string name) cil managed
     IL_0011: call void [mscorlib]System.Console::WriteLine(string)
     IL_0016: nop
     IL_0017: ret
-} // end of method MainClass::HelloWorld
+}
 ```
 
 As you can see IL code is not exactly human readable, and it's also quite verbose. If you want to have an idea of how your code looks like in IL you can use a decompiler tool such as [JustDecompile](https://www.telerik.com/products/decompiler.aspx) or [ILSpy](https://github.com/icsharpcode/ILSpy).
@@ -53,7 +53,7 @@ Working with IL weaving as part of the building process is quite complex though,
 
 All the weaving libraries (also called weavers or addin) using Fody need to have the .Fody suffix, so it's quite easy to recognize them. As an example, if you ever had to implement `INotifyPropertyChanged` manually in a class with dozens of properties you would probably welcome weaving (and Fody) with open arms. By creating all the plumbing code directly in IL, libraries like [PropertyChanged.Fody](https://github.com/Fody/PropertyChanged) allows to inject the necessary notification code without the need to modify anything in the original source code. 
 
-## Realm.Fody
+## Properties
 
 Now, let's take a look at why Realm uses weaving, and so what is that Realm.Fody package doing. IL weaving is actually used in several ways in Realm, but the underlying reasoning for all of them is to greatly simplify the experience for developers using the library. 
 
@@ -98,25 +98,87 @@ class Person: RealmObject
 
 Here `GetValue` and `SetValue` are two methods defined on `RealmObjectBase` (the base class of `RealmObject`) that allow to retrieve(write) a value directly from(to) the database. 
 
-As you can see IL weaving allows to hide the disparity of treatment between managed and unmanaged objects, without the need for the developer to write any additional line of code. 
-
-As an additional note, please be aware that the weaved code I posted is actually more complex, but it gives a good idea of how setters and getters are getting altered. 
+As you can see IL weaving allows to hide the disparity of treatment between managed and unmanaged objects, without the need for the developer to write any additional line of code. As an additional note, be aware that the actual weaved code is more complex than what I have shown, but it gives a good idea of how setters and getters are getting altered. 
 
 
+## `IRealmObjectHelper`
 
+Another important part of the weaving puzzle in Realm is `IRealmObjectHelper`, an interface that represents an helper class that is used internally. Directly from `IRealmObjectHelper.cs`:
 
+```csharp
+public interface IRealmObjectHelper
+{
+    IRealmObjectBase CreateInstance();
 
-## CopyToRealm
+    void CopyToRealm(IRealmObjectBase instance, bool update, bool skipDefaults);
 
-ObjectHelper or whatever it is called
+    bool TryGetPrimaryKeyValue(IRealmObjectBase instance, out object value);
+}
+```
 
-## ModuleInit
+The methods in the interface provide some helpful convenience methods used to deal with specific strongly typed classes. 
+For instance, `CopyToRealm` is a method used to add an object to a realm. When this happens, all its properties need to be written too, and this is what does. If we look at a simplified implementation for the `Person` class before:
 
+```csharp
+void CopyToRealm(IRealmObjectBase instance, bool update, bool skipDefaults)
+{
+    ...
+    SetValue("Name", name);
+    ...
+}
 
-Another important thing is the module init. This is used to build the default schema. It works like this:
+```
 
+This method is being called after the object is managed, and practically ensures that all the property values that the object had are persisted. 
+
+The interesting thing here is that a full implementation of `IRealmObjectHelper` is actually weaved. Differently from the properties setters and getters that are just altered, in this case everything is built from the ground up. 
+
+In order to find this implementation, the Realm objects are actually decorated with the `WovenAttribute` during weaving:
+
+```csharp
+public class WovenAttribute : Attribute
+{
+    internal Type HelperType { get; private set; }
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="WovenAttribute"/> class.
+    /// </summary>
+    /// <param name="helperType">The type of the generated RealmObjectHelper for that class.</param>
+    public WovenAttribute(Type helperType)
+    {
+        HelperType = helperType;
+    }
+}
+```
+
+When needed, the helper is then instantiated directly from `HelperType`:
+
+```csharp
+var wovenAttribute = schema.Type.GetCustomAttribute<WovenAttribute>();
+var helper = (IRealmObjectHelper)Activator.CreateInstance(wovenAttribute.HelperType);
+```
+
+And there it is, a full usable weaved implementation of `IRealmObjectHelper`.
+
+## Module initializer
+
+Module initializers are a kinda obscure feature of .NET that allows writing initialization code for an assembly. They allow libraries to do one-time initialization when loaded, without the need for the user to explicitly call anything. It's a quite niche feature, but unfortunately it was not exposed in C#, and that led to users finding their own way of using it, like with [ModuleInit.Fody](https://github.com/fodyarchived/ModuleInit). Given the need for it, Microsoft then decided to add it in supported platform [starting from C# 9.0](https://docs.microsoft.com/en-us/dotnet/csharp/language-reference/proposals/csharp-9.0/module-initializers).
+
+In a similar way to what is done in ModuleInit.Fody, Realm is also weaving its own module initializer. This is used to build the default schema that is used to open a realm when no schema is passed in the configuration. The use of the module initializer allows this process to happen automatically, without the need for Realm users to call any initialization code themselves. 
+
+Without going too much into details, the weaved module intializer is calling the static method `RealmSchema.AddDefaultTypes(IEnumerable<Type> types)` with all the types that have been already weaved. This adds them to the default schema as described before. 
 
 ## Drawbacks
+
+I hope that by reading the article this far it became clear that IL weaving is an extremely powerful technique. By making possible to alter the compiled code, it allows to greatly simplify the user experience of the users of the Realm .NET library. 
+
+Nevertheless, weaving has some pretty major drawbacks. As I've shown [before](#il-weaving-and-fody) IL code is quite difficult to read and comprehend for developers used to a much higher level of abstraction when programming. It requires a very specific knowledge to work with, making it difficult to maintain, especially in the context of a library whose primary target is not weaving-related. Furthermore, the generated code cannot be verified by the compiler, and it's not even possible to use the debugger with it, so it almost feel like a black box at times. 
+
+
+[RealmWeaver.cs](https://github.com/realm/realm-dotnet/blob/main/Realm/Realm.Weaver/RealmWeaver.cs)
+
+//Maybe for all code I should put the source on github
+
 Horrible to look at (add some gists). Here I've posted code, but the weaved code is actually not visible
 
 Very powerful, but it has several drawbacks too:
@@ -147,5 +209,3 @@ Unfortunately given its additive nature not everything can be done with them
 Adam Furmanek videos on IL
 
 Fody
-ILSpy
-JustDecompile
