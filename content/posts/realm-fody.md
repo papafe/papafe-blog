@@ -2,7 +2,7 @@
 title: "What does Realm.Fody do?"
 date: 2022-06-20
 draft: false
-tags: [c#, realm, fody, weaving, source generators]
+tags: [csharp, realm, fody, weaving, source generators]
 ---
 If you have ever added the Realm .NET Nuget to one of your projects, you have probably noticed that it pulls another smaller package with it, `Realm.Fody`. This article will explain what is this package doing and why it's fundamental to Realm. 
 
