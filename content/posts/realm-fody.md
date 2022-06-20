@@ -7,7 +7,7 @@ tags: [csharp, realm, fody, weaving, source generators]
 
 If you have ever added the Realm .NET Nuget to one of your projects, you have probably noticed that it pulls another smaller package with it, `Realm.Fody`. This article will explain what is this package doing and why it's fundamental to Realm. 
 
-For the developers in the audience that never heard of it, Realm is an (amazing) offline-first (mostly) mobile object database with some really nice features\*. This article is not an introduction to Realm though, nevertheless I expect it should be easy to follow along even if you've never used it before. If you're curious about it and want to learn more about it, the [official documentation](https://www.mongodb.com/docs/realm/introduction/) is a good place to start. Besides, Realm is also open source, so you can check the source code for the .NET SDK on [Github](https://github.com/realm/realm-dotnet). 
+For the developers in the audience that never heard of it, Realm is an (amazing) offline-first (mostly) mobile object database with some really nice features\*. This article is not an introduction to Realm though, nevertheless I expect it should be easy to follow along even if you've never used it before. If you're curious and want to learn more about it, the [official documentation](https://www.mongodb.com/docs/realm/introduction/) is a good place to start.  Besides, Realm open source, so you can check the source code for the .NET SDK on [Github](https://github.com/realm/realm-dotnet). 
 
 >  **_*NOTE:_**  In my day job I am actually working on the .NET SDK of Realm, so my opinion of it may be somehow skewed :grin:
 
@@ -15,7 +15,7 @@ In the next section I am going to give a very small introduction to what IL weav
 
 ## IL weaving and Fody
 
-The compilation of .NET source code produces Common Intermediate Language (CIL or IL for short) code, instead of machine-specific code. IL is a platform and CPU independent instruction set, and this allows the compiled code to be compatible with all the environments that supports the Common Language Infrastructure (CLI), such as the .NET or Mono runtimes. Then, when the IL code needs to be executed it gets compiled down to native code by the JIT compiler of the runtime. 
+The compilation of .NET source code produces `Common Intermediate Language` (*CIL* or *IL* for short) code, instead of machine-specific code. IL is a platform and CPU independent instruction set, and this allows the compiled code to be compatible with all the environments that supports the Common Language Infrastructure (CLI), such as the .NET or Mono runtimes. Then, when the IL code needs to be executed it gets compiled down to native code by the JIT compiler of the runtime. 
 
 I realize that it can be a little though to follow trough the process and all those acronyms, but the main takeaway is that the source code gets transformed into a series of instructions after compilation. To give an idea of how IL looks like, if we take this simple `HelloWorld` method here:
 
