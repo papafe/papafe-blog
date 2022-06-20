@@ -55,7 +55,7 @@ All the weaving libraries (also called weavers or addin) using Fody need to have
 
 ## How Realm uses weaving
 
-Now, let's take a look at why Realm uses weaving, and so what is that Realm.Fody package doing. IL weaving is actually used in several ways in Realm, but the underlying reasoning for all of them is to greatly simplify the experience for developers using the library. 
+Now, let's take a look at how Realm uses weaving, and so what is that Realm.Fody package doing. IL weaving is actually used in several ways in Realm, but the underlying reasoning for all of them is to greatly simplify the experience for developers using the library. 
 
 ### Properties
 
