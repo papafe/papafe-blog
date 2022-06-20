@@ -4,6 +4,7 @@ date: 2022-06-20
 draft: false
 tags: [csharp, realm, fody, weaving, source generators]
 ---
+
 If you have ever added the Realm .NET Nuget to one of your projects, you have probably noticed that it pulls another smaller package with it, `Realm.Fody`. This article will explain what is this package doing and why it's fundamental to Realm. 
 
 For the developers in the audience that never heard of it, Realm is an (amazing) offline-first (mostly) mobile object database with some really nice features\*. This article is not an introduction to Realm though, nevertheless I expect it should be easy to follow along even if you've never used it before. If you're curious about it and want to learn more about it, the [official documentation](https://www.mongodb.com/docs/realm/introduction/) is a good place to start. Besides, Realm is also open source, so you can check the source code for the .NET SDK on [Github](https://github.com/realm/realm-dotnet). 
