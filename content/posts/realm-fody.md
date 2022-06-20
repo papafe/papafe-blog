@@ -2,8 +2,7 @@
 title: "What does Realm.Fody do?"
 date: 2022-06-01T22:46:34+02:00
 draft: false
-tags: [Space, mat]
-categories: [my-category]
+tags: [c#, realm, fody, weaving, source generators]
 ---
 If you have ever added the Realm .NET Nuget to one of your projects, you have probably noticed that it pulls another smaller package with it, `Realm.Fody`. This article will explain what is this package doing and why it's fundamental to Realm. 
 
@@ -103,7 +102,7 @@ As you can see IL weaving allows to hide the disparity of treatment between mana
 
 ## `IRealmObjectHelper`
 
-Another important part of the weaving puzzle in Realm is `IRealmObjectHelper`, an interface that represents an helper class that is used internally. Directly from `IRealmObjectHelper.cs`:
+Another important part of the weaving puzzle in Realm is `IRealmObjectHelper`, an interface that represents an helper class that is used internally. Directly from [`IRealmObjectHelper.cs`](https://github.com/realm/realm-dotnet/blob/main/Realm/Realm/Weaving/IRealmObjectHelper.cs):
 
 ```csharp
 public interface IRealmObjectHelper
@@ -133,7 +132,7 @@ This method is being called after the object is managed, and practically ensures
 
 The interesting thing here is that a full implementation of `IRealmObjectHelper` is actually weaved. Differently from the properties setters and getters that are just altered, in this case everything is built from the ground up. 
 
-In order to find this implementation, the Realm objects are actually decorated with the `WovenAttribute` during weaving:
+In order to find this implementation, the Realm objects are actually decorated with the [`WovenAttribute`](https://github.com/realm/realm-dotnet/blob/main/Realm/Realm/Attributes/WovenAttribute.cs) during weaving:
 
 ```csharp
 public class WovenAttribute : Attribute
@@ -172,40 +171,32 @@ Without going too much into details, the weaved module intializer is calling the
 
 I hope that by reading the article this far it became clear that IL weaving is an extremely powerful technique. By making possible to alter the compiled code, it allows to greatly simplify the user experience of the users of the Realm .NET library. 
 
-Nevertheless, weaving has some pretty major drawbacks. As I've shown [before](#il-weaving-and-fody) IL code is quite difficult to read and comprehend for developers used to a much higher level of abstraction when programming. It requires a very specific knowledge to work with, making it difficult to maintain, especially in the context of a library whose primary target is not weaving-related. Furthermore, the generated code cannot be verified by the compiler, and it's not even possible to use the debugger with it, so it almost feel like a black box at times. 
+Nevertheless, weaving has some major drawbacks. As I've shown [before](#il-weaving-and-fody) IL code is quite difficult to read and comprehend for developers used to a much higher level of abstraction when programming. It requires a very specific knowledge to work with, making it difficult to maintain, especially in the context of a library whose primary target is not weaving-related. Furthermore, the generated code cannot be verified by the compiler, and it's not even possible to use the debugger with it. Finally, different weavers can interact involuntarily with each other, leading to unpredictable results.
+
+If you want to take a look yourself at how complex the IL weaving code looks like in Realm, the main weaving code can be find in
+[RealmWeaver.cs](https://github.com/realm/realm-dotnet/blob/main/Realm/Realm.Weaver/RealmWeaver.cs).
 
 
-[RealmWeaver.cs](https://github.com/realm/realm-dotnet/blob/main/Realm/Realm.Weaver/RealmWeaver.cs)
+## Source Generators
 
-//Maybe for all code I should put the source on github
+One of the major (and modern) alternatives to IL weaving is [**Source Generators**](https://docs.microsoft.com/en-us/dotnet/csharp/roslyn-sdk/source-generators-overview), that were introduced in .NET 5. Source generators allows developers to inspect user code during compilation and generate code on the fly. The generated code is then compiled with the rest of the user code. 
 
-Horrible to look at (add some gists). Here I've posted code, but the weaved code is actually not visible
+In a certain sense, source generators allow to "step into" the compilation process. After an initial compilation run, the source generators are passed a *compilation object*, that allows to inspect the user code using both syntax and semantic models. The generator can then generate additional code that is added to the compilation object. Finally, the compilation resumes as usual. 
 
-Very powerful, but it has several drawbacks too:
-- IL weaving code is extremely difficult to read
-- It requires a very specialized knowledge, it's error prone and trial and error
-- It's not debuggable
-- It happens after compilation, so the compiler cannot verify correctness, or even optimize the code
-- Very difficult to test
+This is a particularly powerful technique and presents some advantages over IL weaving: 
+- Source generated code is "just" code, and so it can be easily understood by a human.
+- The generated code is part of the compilation, so it can be debugged and unit tested.
+- Source generators work with strings, that are much easier to deal with than IL operations and codes. 
+- It's much easier to generate code that is using the latest available language features.
 
+Overall these characteristics, in my opinion, make source generators much more maintainable than IL weaving, and lead to a greatly improved developer experience. 
 
-## Alternatives
+Unfortunately, source generators can only add code to the compilation, but not modify it. This means that they cannot provide the same functionality that weaving does. For instance, it's not possible to modify setters and getters of properties, at least until C# won't allow [partial properties](https://github.com/dotnet/csharplang/discussions/3412). This limitation means that it is not possible to simply convert weaving libraries to source generators, and a more nuanced solution is needed.
 
-One of the alternatives that we're going to use is called source generators. 
-What they do is that they add code to the compilation, they don't modify the pre-existing code like weaving does. 
-For this reason (they are only additive), they are also more limited in what can be achieved with them.
-But:
-- SG generates code, that can be read and understood by a "human". It doesn't require specialized knowledge
-- The generated code is part of the compilation, so it can be debugged
-- SG code is just text, so it's quite easy to test source generators, because we can just compure the sg code and what we expected
-- The code is analyzed by the compiler, that can eventually optimize it and verify correctness
-
-Unfortunately given its additive nature not everything can be done with them
 
 ## Final words
 
+In this article I have tried to give a small introduction to how and why the Realm .NET SDK uses IL weaving (and so Fody). As we have seen, the main reasoning is to give developers a smoother experience when using the library, by allowing to hide quite some complexity.
 
-
-Adam Furmanek videos on IL
-
-Fody
+Even though extremely powerful, weaving is difficult to use and to maintain for a series of reason. Source generators can be an alternative, and provide a much more pleasant library developer experience, but they are still not as versatile unfortunately. 
+ 
