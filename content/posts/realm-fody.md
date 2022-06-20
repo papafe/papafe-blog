@@ -15,9 +15,9 @@ In the next section I am going to give a very small introduction to what IL weav
 
 ## IL weaving and Fody
 
-The compilation of .NET source code produces `Common Intermediate Language` (*CIL* or *IL* for short) code, instead of machine-specific code. IL is a platform and CPU independent instruction set, and this allows the compiled code to be compatible with all the environments that supports the Common Language Infrastructure (CLI), such as the .NET or Mono runtimes. Then, when the IL code needs to be executed it gets compiled down to native code by the JIT compiler of the runtime. 
+The compilation of .NET source code produces `Common Intermediate Language` (*CIL* or *IL* for short) code, instead of machine-specific code. IL is a platform and CPU independent instruction set, and this allows the compiled code to be compatible with all the environments that supports the `Common Language Infrastructure` (CLI), such as the .NET or Mono runtimes. Then, when the IL code needs to be executed it gets compiled down to native code by the JIT compiler of the runtime. 
 
-I realize that it can be a little though to follow trough the process and all those acronyms, but the main takeaway is that the source code gets transformed into a series of instructions after compilation. To give an idea of how IL looks like, if we take this simple `HelloWorld` method here:
+It can be a little though to follow trough the process and all those acronyms, but the main takeaway is that the source code gets transformed into a series of instructions after compilation. To give an idea of how IL looks like, if we take this simple `HelloWorld` method here:
 
 ```csharp
 public static void HelloWorld(string name)
@@ -48,8 +48,7 @@ As you can see IL code is not exactly human readable, and it's also quite verbos
 
 **IL weaving** refers to the process of altering the IL code. This is an extremely powerful technique, because it allows to do things that would not be possible to do just by working with source code. By altering the IL code it's possible to inject new methods, modify existing ones, add attributes to properties and much, much more. This also allows to avoid writing repetitive code as we will see later. 
 
-
-Working with IL weaving as part of the building process is quite complex though, and this is where [Fody](https://github.com/Fody/Fody) enters into the picture. Fody is an extensible tool that allows to simplify the weaving process by taking care of all the heavy lifting. For this reason it's probably the de-facto standard framework used to create weaving libraries. 
+Working with IL weaving as part of the building process is quite complex though, and this is where [Fody](https://github.com/Fody/Fody) enters into the picture. Fody is an extensible tool that allows to simplify the weaving process by taking care of all the heavy lifting. 
 
 All the weaving libraries (also called weavers or addin) using Fody need to have the .Fody suffix, so it's quite easy to recognize them. As an example, if you ever had to implement `INotifyPropertyChanged` manually in a class with dozens of properties you would probably welcome weaving (and Fody) with open arms. By creating all the plumbing code directly in IL, libraries like [PropertyChanged.Fody](https://github.com/Fody/PropertyChanged) allows to inject the necessary notification code without the need to modify anything in the original source code. 
 
@@ -69,14 +68,14 @@ class Person: RealmObject
 ```
 When using an object from the `Person` class, developers are able to use it in the same way wether the object is *managed* (it has been added to a realm) or not (*unmanaged*). But there is a huge difference in the way properties are accessed depending on the state of the object.
 
-If the object is unmanaged, then using the properties means just using the associated backing fields, and not much more. If the object is managed, instead, the situation is more complex. Realm actually has a zero-copy architecture, and every time the value of a property is needed, the value is retrieved directly from the database itself. Similarly, assigning the value of a property means writing it directly to the database (in this case this needs to happen in a write transaction, but that's a story for another time).
+If the object is unmanaged, using the properties means just using the associated backing fields, and not much more. If the object is managed, instead, the situation is more complex. Realm actually has a zero-copy architecture, and every time the value of a property is needed, the value is retrieved directly from the database itself. Similarly, assigning the value of a property means writing it directly to the database (this needs to happen in a write transaction, but that's a story for another time).
 
 This kind of complexity is what is being hidden with IL weaving. The `Person` class you've seen before becomes something like the following after weaving:
 
 ```csharp
 class Person: RealmObject
 {
-    private string name;
+    private string _name;
 
     public string Name
     {
@@ -85,14 +84,14 @@ class Person: RealmObject
             if(isManaged)
                 return GetValue("Name");
             else
-                return name;
+                return _name;
         }
         set
         {
             if(isManaged)
                 SetValue("Name", value);
             else
-                name = value;
+                _name = value;
         }
     }
 }

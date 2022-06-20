@@ -8,7 +8,7 @@
 [highlight]
   noClasses = true #If set to true, it will use default congo colours
   style = "monokai"
-  lineNos = true
+  lineNos = false
 
 [tableOfContents]
   startLevel = 2

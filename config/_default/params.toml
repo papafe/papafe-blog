@@ -11,7 +11,7 @@ autoSwitchAppearance = false
 showAppearanceSwitcher = true
 
 enableSearch = true
-enableCodeCopy = true
+enableCodeCopy = false
 
 # mainSections = ["section1", "section2"]
 # robots = ""
