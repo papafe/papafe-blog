@@ -1,6 +1,6 @@
 ---
 title: "What does Realm.Fody do?"
-date: 2022-06-01T22:46:34+02:00
+date: 2022-06-20
 draft: false
 tags: [c#, realm, fody, weaving, source generators]
 ---
