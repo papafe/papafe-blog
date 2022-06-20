@@ -53,9 +53,11 @@ Working with IL weaving as part of the building process is quite complex though,
 
 All the weaving libraries (also called weavers or addin) using Fody need to have the .Fody suffix, so it's quite easy to recognize them. As an example, if you ever had to implement `INotifyPropertyChanged` manually in a class with dozens of properties you would probably welcome weaving (and Fody) with open arms. By creating all the plumbing code directly in IL, libraries like [PropertyChanged.Fody](https://github.com/Fody/PropertyChanged) allows to inject the necessary notification code without the need to modify anything in the original source code. 
 
-## Properties
+## How Realm uses weaving
 
 Now, let's take a look at why Realm uses weaving, and so what is that Realm.Fody package doing. IL weaving is actually used in several ways in Realm, but the underlying reasoning for all of them is to greatly simplify the experience for developers using the library. 
+
+### Properties
 
 One of the main points for weaving is simplifying the class definition. In Realm, classes are simple POCOs that derive from `RealmObject` or `EmbeddedObject`. For instance:
 
@@ -101,7 +103,7 @@ Here `GetValue` and `SetValue` are two methods defined on `RealmObjectBase` (the
 As you can see IL weaving allows to hide the disparity of treatment between managed and unmanaged objects, without the need for the developer to write any additional line of code. As an additional note, be aware that the actual weaved code is more complex than what I have shown, but it gives a good idea of how setters and getters are getting altered. 
 
 
-## `IRealmObjectHelper`
+### IRealmObjectHelper
 
 Another important part of the weaving puzzle in Realm is `IRealmObjectHelper`, an interface that represents an helper class that is used internally. Directly from [`IRealmObjectHelper.cs`](https://github.com/realm/realm-dotnet/blob/main/Realm/Realm/Weaving/IRealmObjectHelper.cs):
 
@@ -160,7 +162,7 @@ var helper = (IRealmObjectHelper)Activator.CreateInstance(wovenAttribute.HelperT
 
 And there it is, a full usable weaved implementation of `IRealmObjectHelper`.
 
-## Module initializer
+### Module initializer
 
 Module initializers are a kinda obscure feature of .NET that allows writing initialization code for an assembly. They allow libraries to do one-time initialization when loaded, without the need for the user to explicitly call anything. It's a quite niche feature, but unfortunately it was not exposed in C#, and that led to users finding their own way of using it, like with [ModuleInit.Fody](https://github.com/fodyarchived/ModuleInit). Given the need for it, Microsoft then decided to add it in supported platform [starting from C# 9.0](https://docs.microsoft.com/en-us/dotnet/csharp/language-reference/proposals/csharp-9.0/module-initializers).
 
