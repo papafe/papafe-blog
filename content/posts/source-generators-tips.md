@@ -145,6 +145,7 @@ Some tips:
 
 
 
+# Others
 
-
+Suppress warnings on generated code (put pragmas around file)
 
