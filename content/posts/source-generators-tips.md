@@ -111,6 +111,11 @@ public static bool IsRealmObject(this ITypeSymbol symbol)
 If you need only interfaces that it directly implements then check `symbol.Interface`
 
 
+## Random
+
+- Check if a class is defined as partial
+
+
 ## Debugging
 
 Before it was a pain in the ass, now it's easier to debug.
@@ -135,6 +140,8 @@ Those are better than the ones you get under the analyzer folders, but still the
 Testing the functionality of your code is something you definitely need to do (and that we do already), for which you don't need to look at how the generated code looks like, but only if it behaves how you would expect. 
 
 If you want to test also how the generate code looks like and (much more important in my opinion), if the diagnostics are generated correctly and in the right place, they you can use what's in the roslyn cookbook. 
+
+Diagnostics created are different from the ones that the roslyn test thing uses, so you need some conversion. It's convenient to test it by saving it in the file system
 
 In the debugging section I have talked about creating a playground project to see how the source generators produces output and diagnostic. The actual tests can actually refer to those, so it's much easier. Remember, this is only for how the code/diagnostics looks like. You'll need to have something different in place for what it concerns how the code works.
 
