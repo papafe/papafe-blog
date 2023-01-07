@@ -15,3 +15,6 @@ This blog is a collection of short(-ish) posts about topics I found interesting,
 
 :newspaper: External articles:
 - [How to Use Realm Effectively in a Xamarin.Forms App](https://www.mongodb.com/developer/languages/csharp/use-effectively-realm-in-xamarin-forms/) 
+
+:movie_camera: Presentations:
+- [From IL Weaving to Source Generators, the Realm story](https://videos.ida.dk/id/1_bufb2slq)

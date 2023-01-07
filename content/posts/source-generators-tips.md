@@ -38,7 +38,8 @@ context.SemanticModel.GetDeclaredSymbol(classSyntax).
 
 (put links to docs)
 
-Generally it's easier to go from syntax to semantic as you can see (you get only one result)
+Generally it's easier to go from syntax to semantic as you can see (you get only one result). 
+Also if you go from semantic to syntax, sometimes it needs to reparse the whole syntax tree, so it's better to do the opposite if possible. 
 
 ## Explore the syntax tree
 
@@ -147,5 +148,5 @@ Some tips:
 
 # Others
 
-Suppress warnings on generated code (put pragmas around file)
+Suppress warnings on generated code (put pragmas around file) -- Auto - generated?
 
