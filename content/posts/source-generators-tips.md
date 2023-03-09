@@ -1,6 +1,6 @@
 ---
 title: "Tips and tricks for Source Generators"
-date: 2022-03-09
+date: 2023-03-09
 draft: false
 tags: [csharp, roslyn, source generators]
 ---
