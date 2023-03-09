@@ -3,6 +3,7 @@ title: "Tips and tricks for Source Generators"
 date: 2023-03-09
 draft: false
 tags: [csharp, roslyn, source generators]
+description: A collection of tips and tricks for Source Generators
 ---
 ## Introduction
 

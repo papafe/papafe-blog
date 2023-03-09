@@ -15,3 +15,6 @@ summaryLength = 0
 
 [outputs]
   home = ["HTML", "RSS", "JSON"]
+
+[params]
+ images = ["img/me.png"]
