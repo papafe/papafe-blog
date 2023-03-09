@@ -1,10 +1,10 @@
 ---
 title: "Tips and tricks for Source Generators"
-date: 2022-06-20
-draft: true
+date: 2022-03-09
+draft: false
 tags: [csharp, roslyn, source generators]
 ---
-# Introduction
+## Introduction
 
 [`Source Generators`](https://docs.microsoft.com/en-us/dotnet/csharp/roslyn-sdk/source-generators-overview) are an amazing feature of the .NET Compiler Platform (Roslyn) added in .NET 5 that allows developer to "step into" the compilation, inspect the user code and generate additional code on the fly.
 Code generation makes possible, among other things, to automate writing boilerplate/repetitive code, to replace reflection in code discovery and much more. 
@@ -18,9 +18,9 @@ This was my first time working on source generators, and I did not have any expe
 
 As a final note before going further, if you are looking for how to do certain things with source generators, it's always a good idea to take a look first at the [Roslyn Source Generator Cookbook](https://github.com/dotnet/roslyn/blob/main/docs/features/source-generators.cookbook.md), that contains guidelines for quite a number of common patterns. Finally, I have divided the article in different topics, so it should be easier to find something you are interested into.
 
-# Writing
+## Writing
 
-## Move between syntax and semantic 
+### Move between syntax and semantic 
 
 When inspecting the user code, there are essentially two different levels that can be probed to get information, the syntactic level and the semantic level.
 
@@ -30,7 +30,7 @@ At the semantic level the code is represented by a series of symbols (classes im
 
 Even though the semantic model is more powerful than the syntactic level I found myself using both of them for different reasons, depending on how easy it was to retrieve the information I needed for a specific case. Fortunately it's quite easy to move from one to the other.
 
-### From syntax to semantic (`SyntaxNode` -> `ISymbol`)
+#### From syntax to semantic (`SyntaxNode` -> `ISymbol`)
 
 ```csharp
 let symbol = context.SemanticModel.GetDeclaredSymbol(syntaxNode) //context is GeneratorExecutionContext
@@ -39,7 +39,7 @@ let symbol = context.SemanticModel.GetDeclaredSymbol(syntaxNode) //context is Ge
 There are actually various overloads of the `GetDeclaredSymbol` method depending on the kind of input `syntaxNode`, and you can find more info in the [docs](https://learn.microsoft.com/en-us/dotnet/api/microsoft.codeanalysis.csharp.csharpextensions.getdeclaredsymbol?view=roslyn-dotnet). 
 
 
-### From semantic to syntax (`ISymbol` -> `SyntaxNode`)
+#### From semantic to syntax (`ISymbol` -> `SyntaxNode`)
 
 ```csharp
 var references = symbol.DeclaringSyntaxReferences //ImmutableArray<SyntaxReference> 
@@ -51,15 +51,15 @@ foreach (SyntaxReference sr in references)
 
 `ISymbol.DeclaringSyntaxReferences` can return multiple values (for example with partial class declaration) or none if declared externally. Additionally, `SyntaxReference.GetSyntax()` can trigger a parse of the syntax tree to recover the corresponding node.
 
-## Explore the syntax tree
+### Explore the syntax tree
 
 It is definitely useful to check how the syntax tree is structured for specific code, in order to understand how to retrieve a certain kind of info. For this operation I definitely recommend taking a look at [SharpLab.io](https://sharplab.io/), a .NET code playground that contains also a syntax visualizer. While is it possible to get a [syntax visualizer in Visual Studio too](https://learn.microsoft.com/en-us/dotnet/csharp/roslyn-sdk/syntax-visualizer?tabs=csharp), I personally preferred to have an external tool to do check syntax trees, in order to avoid disrupting the development flow.
 
-## Properties
+### Properties
 
 This section contains a collection of utility extension methods regarding properties.
 
-### Check if a property is automatic
+#### Check if a property is automatic
 ```csharp
 public static bool IsAutomaticProperty(this PropertyDeclarationSyntax propertySyntax)
 {
@@ -75,7 +75,7 @@ public static bool IsAutomaticProperty(this PropertyDeclarationSyntax propertySy
 }
 ```
 
-### Check if a property has a setter/getter
+#### Check if a property has a setter/getter
 ```csharp
 public static bool HasSetter(this PropertyDeclarationSyntax propertySyntax)
 {
@@ -88,11 +88,11 @@ public static bool HasGetter(this PropertyDeclarationSyntax propertySyntax)
 }
 ```
 
-## Attributes
+### Attributes
 
 This section contains a collection of utility extension methods regarding attributes.
 
-### Check if symbol has a certain attribute
+#### Check if symbol has a certain attribute
 ```csharp
 
 public static bool HasAttribute(this ISymbol symbol, string attributeName)
@@ -100,7 +100,7 @@ public static bool HasAttribute(this ISymbol symbol, string attributeName)
     return symbol.GetAttributes().Any(a => a.AttributeClass.Name == attributeName);
 }
 ```
-### Get the arguments of an attribute
+#### Get the arguments of an attribute
 
 ```csharp
 public static object GetAttributeArgument(this ISymbol symbol, string attributeName)
@@ -110,11 +110,11 @@ public static object GetAttributeArgument(this ISymbol symbol, string attributeN
     return attribute?.ConstructorArguments[0].Value;
 }
 ```
-## Interfaces
+### Interfaces
 
 This section contains a collection of utility extension methods regarding interfaces.
 
-### Check if a type implements an interface
+#### Check if a type implements an interface
 ```csharp
 public static bool Implements(this ITypeSymbol symbol, string interfaceName)
 {
@@ -122,7 +122,7 @@ public static bool Implements(this ITypeSymbol symbol, string interfaceName)
 }
 ```
 
-### Check if a type directly implements an interface
+#### Check if a type directly implements an interface
 ```csharp
 public static bool DirectlyImplements(this ITypeSymbol symbol, string interfaceName)
 {
@@ -130,11 +130,11 @@ public static bool DirectlyImplements(this ITypeSymbol symbol, string interfaceN
 }
 ```
 
-## Mixed
+### Mixed
 
 This section contains a collection of mixed utility extension methods.
 
-### Check if a class is partial
+#### Check if a class is partial
 
 ```csharp
 public static bool IsPartial(this ClassDeclarationSyntax cds)
@@ -142,7 +142,7 @@ public static bool IsPartial(this ClassDeclarationSyntax cds)
     return cds.Modifiers.Any(m => m.IsKind(SyntaxKind.PartialKeyword))
 }
 ```
-## Nullability in the user code
+### Nullability in the user code
 
 The nullability of a certain type can be found by checking [`ITypeSymbol.NullableAnnotation`](https://learn.microsoft.com/en-us/dotnet/api/microsoft.codeanalysis.itypesymbol.nullableannotation?view=roslyn-dotnet#microsoft-codeanalysis-itypesymbol-nullableannotation).
 The value of this enum is dependent on wether the nullability annotations are enabled or not:
@@ -151,17 +151,17 @@ The value of this enum is dependent on wether the nullability annotations are en
 
 Remember that nullability annotations can be turned on at a project level as well as at a local level with directives like `#nullable enable` (more info in the [docs](https://learn.microsoft.com/en-us/dotnet/csharp/nullable-references)).
 
-## Nullability in the generated code
+### Nullability in the generated code
 
 By default, the generated files will have nullability annotations disabled, wether or not the annotations are enabled in the project in which the file are generated. For this reason it's better to specify manually the preferred nullability context in the generated files, for example by adding `#nullable enable` at the top of the file.
 
-## Disable StyleCop Analyzers in generated code
+### Disable StyleCop Analyzers in generated code
 
 Remember to add `// <auto-generated />` comment at the top of all the generated files, otherwise StyleCop Analyzers could emit warnings in the generated code. 
 
-# Debugging
+## Debugging
 
-## Create debugging launch profile
+### Create debugging launch profile
 
 Debugging used to be a really painful experience, but fortunately the situation greatly improved from [Visual Studio v16.10](https://learn.microsoft.com/en-us/visualstudio/releases/2019/release-notes-v16.10#NETProductivity), that introduced first class debugger support for source generators. 
 
@@ -180,7 +180,7 @@ Then you can create a `Roslyn Component` debug launch profile from the `Debug` s
 A playground project is also particularly useful to have a first verification that eventual diagnostics have been generated correctly, and at the right position in the user code. 
 
 
-## Persist generated files
+### Persist generated files
 
 In order to see the generated files from the source generator you can check under `Dependencies -> Analyzers -> SourceGeneratorProjectName -> SourceGeneratorName`. Even though all the generated files are there, there are some issues regarding [the caching of the source generator when it's being referenced locally](https://github.com/dotnet/roslyn/issues/48083). This caching behavior results in, sometimes, not being able to see any change in the generated files, even though there have been changes in the source generator itself. In these cases the best option is just to restart Visual Studio. 
 
@@ -206,9 +206,9 @@ There is actually a better way to have a look at the generated files that does n
 
 Emitting the generated files not only allows to have direct feedback on the source generator, but it also makes possible to add those files to source control. In my opinion that is particularly useful, as it allows to see what kind of effect certain changes of the source generator code have on the generated files.
 
-# Testing
+## Testing
 
-## Unit testing
+### Unit testing
 
 When developing a source generator there are essentially two things that can be tested: how the generated code behaves, and how the generated code looks like. We will focus on the second part in this section, as the first is no different than testing any other code. 
 
@@ -226,11 +226,11 @@ This approach relies on verifying manually that the generated files are as we ex
 
 I think that this approach is also particularly useful in verifying that eventual diagnostics are generated correctly, as it is possible to confirm visually that the diagnostics are not only correct, but also in the right position in the code. If we had to specify the diagnostic objects in code with the verifier, then it would be much more difficult to understand their correctness, especially regarding positioning.
 
-## Various
+### Various
 
 The Roslyn cookbook shows a basic example of how to do source generator unit testing. In the following part I have gathered some small tips on how to modify the verifier to accommodate some common needs.
 
-### Disable compiler diagnostics
+#### Disable compiler diagnostics
 
 By default, the verifiers validates all kind of diagnostics coming from the source code. It could be convenient to validate only the diagnostics emitted from the source generator. This can be done like this:
 
@@ -246,7 +246,7 @@ public class Test : CSharpSourceGeneratorTest<TSourceGenerator, NUnitVerifier>
 }
 ```
 
-## Add reference to framework assemblies
+#### Add reference to framework assemblies
 
 By default the verifier uses default reference assemblies depending on the target framework of the test project. You could be wanting to change the default reference assemblies depending on the source generator. This can be done like this:
 
@@ -262,7 +262,7 @@ public class Test : CSharpSourceGeneratorTest<TSourceGenerator, NUnitVerifier>
 }
 ```
 
-## Add reference to your assemblies
+#### Add reference to your assemblies
 
 You may need to add additional references to your verifier. This can be done like this:
 
@@ -278,6 +278,6 @@ public class Test : CSharpSourceGeneratorTest<TSourceGenerator, NUnitVerifier>
 ```
 
 
-# Final words
+## Final words
 
 I hope some of these tips will be useful to you. If you want to give a look at how the source generator for the .NET Realm SDK looks like you can do it in the [Github repo](https://github.com/realm/realm-dotnet/tree/main/Realm/Realm.SourceGenerator) (this also includes [how it's tested](https://github.com/realm/realm-dotnet/tree/main/Tests/SourceGenerators/Realm.SourceGenerator.Tests)).
