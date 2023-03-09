@@ -9,17 +9,14 @@ tags: [csharp, roslyn, source generators]
 [`Source Generators`](https://docs.microsoft.com/en-us/dotnet/csharp/roslyn-sdk/source-generators-overview) are an amazing feature of the .NET Compiler Platform (Roslyn) added in .NET 5 that allows developer to "step into" the compilation, inspect the user code and generate additional code on the fly.
 Code generation makes possible, among other things, to automate writing boilerplate/repetitive code, to replace reflection in code discovery and much more. 
 
-Source generators are also considerably more "developer friendly" than other code generation technologies, such as IL Weaving (which I have talked in another [blog post]( {{< relref "realm-fody.md" >}} ). The main disadvantage over IL Weaving though, is that source generators can only add code to the compilation, and not modify the existing one. However, this limitation is definitely counterbalanced by its relative ease of use in my opinion.
-
-This article is a collection of information that I have gathered while working on adding a source generator to the [.NET SDK of Realm](https://github.com/realm/realm-dotnet). This is not an introduction to source generators, as I think there is already a lot of good introductory material out there. 
+Source generators are also considerably more "developer friendly" than other code generation technologies, such as IL Weaving (which I have talked in another [blog post]( {{< relref "realm-fody.md" >}} )). The main disadvantage over IL Weaving though, is that source generators can only add code to the compilation, and not modify the existing one. However, this limitation is definitely counterbalanced by its relative ease of use in my opinion.
 
 Being a "relatively" new feature and dealing with the Roslyn SDK
-(that is quite complex in itself), I found the information available on how to write, debug and test a source generator to be quite sparse. For this reason this article is mostly a collection of various tips, tricks and considerations that I have gathered over time, and that I hope will be useful to someone else too. I have divided the tips in different topics, so it should be easier to find something you are interested into.
+(that is quite complex in itself), I found practical information available on how to write, debug and test a source generator to be quite sparse. This article is a collection of various tips, tricks and considerations that I have gathered while working on adding a source generator to the [.NET Realm SDK](https://github.com/realm/realm-dotnet), and that I hope will be useful to someone else too. This is not an introduction to source generators though, as I think there is already a lot of good material out there for that. 
 
-This was my first time working on source generators, and I didn't have any experience with analyzers or Roslyn beforehand, so it's very well possible that some of my suggestions do not follow the recommended approach, or there are some caveats that I did not anticipate. Definitely leave a comment if you think there is something that can be improved. 
+This was my first time working on source generators, and I did not have any experience with analyzers or Roslyn beforehand, so it's very well possible that some of my suggestions do not follow the recommended approach, or there are some caveats that I did not anticipate. Definitely leave a comment if you think there is something that can be improved. 
 
-As a final note before going further, if you are looking for how to do certain things with source generators, it's always a good idea to take a look first at the [Roslyn Source Generator Cookbook](https://github.com/dotnet/roslyn/blob/main/docs/features/source-generators.cookbook.md), that contains guidelines for quite a number of common patterns. 
-
+As a final note before going further, if you are looking for how to do certain things with source generators, it's always a good idea to take a look first at the [Roslyn Source Generator Cookbook](https://github.com/dotnet/roslyn/blob/main/docs/features/source-generators.cookbook.md), that contains guidelines for quite a number of common patterns. Finally, I have divided the article in different topics, so it should be easier to find something you are interested into.
 
 # Writing
 
@@ -27,9 +24,10 @@ As a final note before going further, if you are looking for how to do certain t
 
 When inspecting the user code, there are essentially two different levels that can be probed to get information, the syntactic level and the semantic level.
 
-At the syntactic level the user code is represented by a syntax tree with the compilation unit at the root and the nodes (classes derived from `SyntaxNode` in the RoslynAPI) of the tree being the different elements of the code, such as properties declarations, using directives or string literals, for instance. The syntax tree contains all the information about how the user code is laid out, so it's possible to rebuild the source code exactly from it. 
+At the syntactic level the user code is represented by a syntax tree with the compilation unit at the root and the nodes (classes derived from `SyntaxNode` in the RoslynAPI) of the tree being the different elements of the code, such as properties declarations, using directives or string literals, for instance. The syntax tree contains all the information about how the user code is written and laid out (including spaces), so it's possible to rebuild the source code exactly from it. 
 
-At the semantic level the code is represented by a series of symbols (classes implementing `ISymbol` in the RoslynAPI) and their relationships, representing types, namespaces, properties and so on. Differently from the syntax nodes, the symbols and are related to the *meaning* of the code, and not how it is structured. At this level, for instance, it's possible to find the namespace in which a certain type is defined, or find information about base classes and overridden methods. 
+At the semantic level the code is represented by a series of symbols (classes implementing `ISymbol` in the RoslynAPI) and their relationships, representing types, namespaces, properties and so on. Differently from the syntax nodes, the symbols are related to the *meaning* of the code, and not how it is structured. At this level, for instance, it's possible to find the namespace in which a certain type is defined, or find information about base classes and overridden methods. 
+
 Even though the semantic model is more powerful than the syntactic level I found myself using both of them for different reasons, depending on how easy it was to retrieve the information I needed for a specific case. Fortunately it's quite easy to move from one to the other.
 
 ### From syntax to semantic (`SyntaxNode` -> `ISymbol`)
@@ -43,10 +41,8 @@ There are actually various overloads of the `GetDeclaredSymbol` method depending
 
 ### From semantic to syntax (`ISymbol` -> `SyntaxNode`)
 
-Symbol -> Node 
-
 ```csharp
-var references = symbol.DeclaringSyntaxReferences //returns ImmutableArray<SyntaxReference> 
+var references = symbol.DeclaringSyntaxReferences //ImmutableArray<SyntaxReference> 
 foreach (SyntaxReference sr in references)
 {
     var syntaxNode = sr.GetSyntax()
@@ -57,11 +53,11 @@ foreach (SyntaxReference sr in references)
 
 ## Explore the syntax tree
 
-It is definitely useful to check how the syntax tree looks like for certain code, in order to understand how to retrieve a certain kind of info. For this operation I definitely recommend taking a look at [`SharpLab.io`](https://sharplab.io/), a .NET code playground that contains also a syntax visualizer. While is it possible to get a [syntax visualizer in Visual Studio too](https://learn.microsoft.com/en-us/dotnet/csharp/roslyn-sdk/syntax-visualizer?tabs=csharp), I personally preferred to have an external tool to do check syntax trees, in order to avoid disrupting the current development flow. 
+It is definitely useful to check how the syntax tree is structured for specific code, in order to understand how to retrieve a certain kind of info. For this operation I definitely recommend taking a look at [SharpLab.io](https://sharplab.io/), a .NET code playground that contains also a syntax visualizer. While is it possible to get a [syntax visualizer in Visual Studio too](https://learn.microsoft.com/en-us/dotnet/csharp/roslyn-sdk/syntax-visualizer?tabs=csharp), I personally preferred to have an external tool to do check syntax trees, in order to avoid disrupting the development flow.
 
 ## Properties
 
-A collection of utility extension methods regarding properties.
+This section contains a collection of utility extension methods regarding properties.
 
 ### Check if a property is automatic
 ```csharp
@@ -94,7 +90,7 @@ public static bool HasGetter(this PropertyDeclarationSyntax propertySyntax)
 
 ## Attributes
 
-A collection of utility extension methods regarding attributes.
+This section contains a collection of utility extension methods regarding attributes.
 
 ### Check if symbol has a certain attribute
 ```csharp
@@ -116,7 +112,7 @@ public static object GetAttributeArgument(this ISymbol symbol, string attributeN
 ```
 ## Interfaces
 
-A collection of utility extension methods regarding interfaces.
+This section contains a collection of utility extension methods regarding interfaces.
 
 ### Check if a type implements an interface
 ```csharp
@@ -136,7 +132,7 @@ public static bool DirectlyImplements(this ITypeSymbol symbol, string interfaceN
 
 ## Mixed
 
-A collection of mixed utility extension methods.
+This section contains a collection of mixed utility extension methods.
 
 ### Check if a class is partial
 
@@ -150,14 +146,14 @@ public static bool IsPartial(this ClassDeclarationSyntax cds)
 
 The nullability of a certain type can be found by checking [`ITypeSymbol.NullableAnnotation`](https://learn.microsoft.com/en-us/dotnet/api/microsoft.codeanalysis.itypesymbol.nullableannotation?view=roslyn-dotnet#microsoft-codeanalysis-itypesymbol-nullableannotation).
 The value of this enum is dependent on wether the nullability annotations are enabled or not:
-- `None`. No nullability information at all. This is only for reference types when nullability annotations are not enabled;
+- `None`. No nullability information at all. This is only used for reference types when nullability annotations are not enabled;
 - `Annotated`/`NotAnnotated`. These are used for value types (with nullability annotations enabled or not) and reference types (only when nullability annotations are on). `Annotated` means that the type has a `?`.
 
 Remember that nullability annotations can be turned on at a project level as well as at a local level with directives like `#nullable enable` (more info in the [docs](https://learn.microsoft.com/en-us/dotnet/csharp/nullable-references)).
 
 ## Nullability in the generated code
 
-By default, the generated files will have nullability annotations disabled, wether or not the annotations are enabled in the project in which the file are generated. For this reason it's better to specify manually the preferred nullability context in the generated files, for example by adding `#nullable enable`.
+By default, the generated files will have nullability annotations disabled, wether or not the annotations are enabled in the project in which the file are generated. For this reason it's better to specify manually the preferred nullability context in the generated files, for example by adding `#nullable enable` at the top of the file.
 
 ## Disable StyleCop Analyzers in generated code
 
@@ -167,9 +163,9 @@ Remember to add `// <auto-generated />` comment at the top of all the generated 
 
 ## Create debugging launch profile
 
-Debugging used to be a really painful experience, but fortunately the situation greatly improved from [Visual Studio v16.10](https://learn.microsoft.com/en-us/visualstudio/releases/2019/release-notes-v16.10#NETProductivity) that introduced first class debugger support for source generators. 
+Debugging used to be a really painful experience, but fortunately the situation greatly improved from [Visual Studio v16.10](https://learn.microsoft.com/en-us/visualstudio/releases/2019/release-notes-v16.10#NETProductivity), that introduced first class debugger support for source generators. 
 
-In order to use the debugger support you need to add the `<IsRoslynComponent>true</IsRoslynComponent>` to the project file of the source generator project and be sure to have the `.NET Compiler Platform SDK` component installed. 
+In order to use the debugger support you need to add the `<IsRoslynComponent>true</IsRoslynComponent>` tag to the project file of the source generator project and be sure to have the `.NET Compiler Platform SDK` component installed. 
 
 At this point my suggestion would be to create a project that can become your *playground* for debugging (and testing) the source generator. After creating the playground project, you should add a reference to your source generator project and edit the `csproj` file like this:
 
@@ -179,14 +175,14 @@ At this point my suggestion would be to create a project that can become your *p
 </ItemGroup>
 ```
 
-Then you can create a `Roslyn Component` debug launch profile from the `Debug` section of properties the source generator project. In the profile you can specify the target project, that is one of the project that is referencing the source generator as showing before. Running this launch profile will execute the source generator and you will able to debug it as any other project.
+Then you can create a `Roslyn Component` debug launch profile from the `Debug` section of properties the source generator project. In the profile you can specify the target project, that is one of the projects that is referencing the source generator as shown before. Running this launch profile will execute the source generator and you will able to debug it as any other project.
 
-This kind of playground project is also particularly useful to have a first verification that eventual diagnostics have been generated correctly, and at the right position in the user code. 
+A playground project is also particularly useful to have a first verification that eventual diagnostics have been generated correctly, and at the right position in the user code. 
 
 
 ## Persist generated files
 
-In order to see the generated files from the source generator you can check under `Dependencies -> Analyzers -> SourceGeneratorProjectName -> SourceGeneratorName`. Even though all the generated files are there, there are some issues regarding [the caching of the source generator when referencing it locally](https://github.com/dotnet/roslyn/issues/48083). This caching behavior results in, sometimes, not being able to see any change in the generated files, even though there have been changes in the source generator itself. In these cases the best option is just to restart Visual Studio. 
+In order to see the generated files from the source generator you can check under `Dependencies -> Analyzers -> SourceGeneratorProjectName -> SourceGeneratorName`. Even though all the generated files are there, there are some issues regarding [the caching of the source generator when it's being referenced locally](https://github.com/dotnet/roslyn/issues/48083). This caching behavior results in, sometimes, not being able to see any change in the generated files, even though there have been changes in the source generator itself. In these cases the best option is just to restart Visual Studio. 
 
 There is actually a better way to have a look at the generated files that does not suffer from those issues. What you can do is to persist the generated files to disk by modifying the project file:
 
@@ -216,23 +212,23 @@ Emitting the generated files not only allows to have direct feedback on the sour
 
 When developing a source generator there are essentially two things that can be tested: how the generated code behaves, and how the generated code looks like. We will focus on the second part in this section, as the first is no different than testing any other code. 
 
-In order to test that the generated files are generated correctly, I suggest to follow what is described in the `Unit Testing of Generators` section of the [Roslyn Cookbook](https://github.com/dotnet/roslyn/blob/main/docs/features/source-generators.cookbook.md#unit-testing-of-generators). Personally I prefer the first solution to testing, that makes use of the *verifiers* contained in the ` Microsoft.CodeAnalysis.Testing` packages, so that the source generator can be tested in a similar way to an analyzer. 
+In order to test that the generated files are generated correctly, I suggest to follow what is described in the `Unit Testing of Generators` section of the [Roslyn Cookbook](https://github.com/dotnet/roslyn/blob/main/docs/features/source-generators.cookbook.md#unit-testing-of-generators). Personally I prefer the first solution to testing, that makes use of the *verifiers* contained in the `Microsoft.CodeAnalysis.Testing` packages, so that the source generator can be tested in a similar way to an analyzer. 
 
 I am not going to go into details about how to use these, as it's shown in the cookbook, but the main idea here is to specify the source code, the generated code, eventually what kind of diagnostics should be emitted, and the verifier takes care of running the source generator and check that the results are as expected. 
 
-Depending on the kind of source generator that you will be working on, this process of specifying text strings for the source and generated files, as well as the diagnostics could be quite cumbersome. For this reason I have decided to use a more "flexible" approach for the unit testing of the source generator included with the Realm SDK:
+Depending on the kind of source generator that you will be working on, the process of specifying text strings for the source and generated files, as well as the diagnostics could be quite cumbersome. For this reason I have decided to use a more "flexible" approach for the unit testing of the source generator included with the Realm SDK:
 - I have created a *playground* project that references the source generator project as described in the previous section. This project will contain all the source files that are used for unit testing, including files that should have diagnostics.
-- The source generated files are emitted to the file system as explained in the previous section
-- Additionally, the source generator is also generating files containing eventual debugging diagnostics that need to be emitted from the test files. The diagnostics are just serialized in a file as JSON
-- The verifier reads the source files, the generated files as well as the diagnostics directly from the file system for testing
+- The source generated files are emitted to the file system as explained in the previous section.
+- Additionally, the source generator is also generating files containing eventual debugging diagnostics that need to be emitted from the test files. The diagnostics are just serialized in a file as JSON.
+- The verifier reads the source files, the generated files as well as the diagnostics directly from the file system for testing.
 
-This approach relies on verifying manually that the generated files are as we expect them to be, and it could be argued that this is a naive way of testing, but in my opinion this is *good enough*. In the end these tests are not verifying that the generated code works, but just confirm that it looks as expected, so we do not need to be unnecessarily strict from my point of view.
+This approach relies on verifying manually that the generated files are as we expect them to be. Even though it could be argued that this is a naive way of testing, in my opinion this is *good enough*. In the end these tests are not verifying that the generated code works, but just confirm that it looks as expected, so we do not need to be unnecessarily strict from my point of view.
 
 I think that this approach is also particularly useful in verifying that eventual diagnostics are generated correctly, as it is possible to confirm visually that the diagnostics are not only correct, but also in the right position in the code. If we had to specify the diagnostic objects in code with the verifier, then it would be much more difficult to understand their correctness, especially regarding positioning.
 
 ## Various
 
-The Roslyn cookbook shows a basic example of how to do source generator unit testing. In the following part I have gathered some small tips on how to modify the verifier to accommodate some more complex needs.
+The Roslyn cookbook shows a basic example of how to do source generator unit testing. In the following part I have gathered some small tips on how to modify the verifier to accommodate some common needs.
 
 ### Disable compiler diagnostics
 
@@ -281,10 +277,7 @@ public class Test : CSharpSourceGeneratorTest<TSourceGenerator, NUnitVerifier>
 }
 ```
 
-## Diagnostic testing
 
+# Final words
 
-# Others
-
-Suppress warnings on generated code (put pragmas around file) -- Auto - generated?
-
+I hope some of these tips will be useful to you. If you want to give a look at how the source generator for the .NET Realm SDK looks like you can do it in the [Github repo](https://github.com/realm/realm-dotnet/tree/main/Realm/Realm.SourceGenerator) (this also includes [how it's tested](https://github.com/realm/realm-dotnet/tree/main/Tests/SourceGenerators/Realm.SourceGenerator.Tests)).
