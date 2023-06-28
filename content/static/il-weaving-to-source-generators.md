@@ -14,6 +14,7 @@ A collection of links to read more about Realm, IL Weaving and Source Generators
 Realm .NET:
 - [Github](https://github.com/realm/realm-dotnet)
 - [Docs](https://www.mongodb.com/docs/realm/sdk/dotnet/realm-database/)
+- [Device Sync](https://www.mongodb.com/atlas/app-services/device-sync)
 
 IL Weaving:
 - [Fody](https://github.com/Fody/Fody)
@@ -22,3 +23,7 @@ IL Weaving:
 Source Generators:
 - [Overview](https://docs.microsoft.com/en-us/dotnet/csharp/roslyn-sdk/source-generators-overview)
 - [Tips and tricks for Source Generators](https://papafe.dev/posts/source-generators-tips/)
+
+Tools:
+- [Sharplab.io](https://sharplab.io/)
+- [ILSPY](https://github.com/icsharpcode/ILSpy)
