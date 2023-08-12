@@ -127,7 +127,7 @@ public static bool Implements(this ITypeSymbol symbol, string interfaceName)
 ```csharp
 public static bool DirectlyImplements(this ITypeSymbol symbol, string interfaceName)
 {
-    return symbol.AllInterfaces.Any(i => i.Name == interfaceName);
+    return symbol.Interfaces.Any(i => i.Name == interfaceName);
 }
 ```
 
